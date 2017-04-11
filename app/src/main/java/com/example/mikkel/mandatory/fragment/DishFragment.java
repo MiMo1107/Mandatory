@@ -89,8 +89,11 @@ public class DishFragment extends Fragment {
             PieDataSet dataSet = new PieDataSet(yvalues,"");
             dataSet.setColors(ColorTemplate.COLORFUL_COLORS);
             dataSet.setValueFormatter(new PercentFormatter());
+            dataSet.setValueTextSize(20f);
             pieChart.setData(new PieData(dataSet));
-            pieChart.setDescription(new Description());
+            Description description = new Description();
+            description.setText("");
+            pieChart.setDescription(description);
         }
         return rootView;
     }
