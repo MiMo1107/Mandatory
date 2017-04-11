@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_menu"
+            android:icon="@drawable/ic_menu_menu"
+            android:title="Menu"
+            android:checked="true"/>
+        <item
+            android:id="@+id/nav_takeaway"
+            android:icon="@drawable/ic_menu_takeaway"
+            android:title="Takeaway" />
+        <item
+            android:id="@+id/nav_contact"
+            android:icon="@drawable/ic_menu_contact"
+            android:title="Contact" />
+    </group>
+
+    <item android:title="My options">
+        <menu>
+            <item
+                android:id="@+id/nav_myProfile"
+                android:icon="@drawable/ic_menu_user"
+                android:title="My profile" />
+            <item
+                android:id="@+id/nav_receipt"
+                android:icon="@drawable/ic_menu_receipt"
+                android:title="My receipts" />
+            <item
+                android:id="@+id/nav_ratings"
+                android:icon="@drawable/ic_menu_rate"
+                android:title="My ratings" />
+        </menu>
+    </item>
+
+</menu>
