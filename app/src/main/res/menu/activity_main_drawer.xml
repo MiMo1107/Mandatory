@@ -4,9 +4,9 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_menu"
+            android:checked="true"
             android:icon="@drawable/ic_menu_menu"
-            android:title="Menu"
-            android:checked="true"/>
+            android:title="Menu" />
         <item
             android:id="@+id/nav_takeaway"
             android:icon="@drawable/ic_menu_takeaway"
@@ -15,23 +15,22 @@
             android:id="@+id/nav_contact"
             android:icon="@drawable/ic_menu_contact"
             android:title="Contact" />
+        <item
+            android:id="@+id/nav_customer"
+            android:icon="@drawable/ic_menu_group"
+            android:title="Customers" />
+        <item
+            android:id="@+id/nav_myProfile"
+            android:icon="@drawable/ic_menu_user"
+            android:title="My profile" />
+        <item
+            android:id="@+id/nav_receipt"
+            android:icon="@drawable/ic_menu_receipt"
+            android:title="My receipts" />
+        <item
+            android:id="@+id/nav_ratings"
+            android:icon="@drawable/ic_menu_rate"
+            android:title="My ratings" />
     </group>
-
-    <item android:title="My options">
-        <menu>
-            <item
-                android:id="@+id/nav_myProfile"
-                android:icon="@drawable/ic_menu_user"
-                android:title="My profile" />
-            <item
-                android:id="@+id/nav_receipt"
-                android:icon="@drawable/ic_menu_receipt"
-                android:title="My receipts" />
-            <item
-                android:id="@+id/nav_ratings"
-                android:icon="@drawable/ic_menu_rate"
-                android:title="My ratings" />
-        </menu>
-    </item>
 
 </menu>

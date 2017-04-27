@@ -12,6 +12,7 @@
     <!-- Strings related to login -->
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
+    <string name="prompt_password_repeat">Enter password again</string>
     <string name="action_sign_in">Sign in or register</string>
     <string name="action_sign_in_short">Sign in</string>
     <string name="error_invalid_email">This email address is invalid</string>
@@ -21,4 +22,17 @@
     <string name="permission_rationale">"Contacts permissions are needed for providing email
         completions."
     </string>
+
+    <string name="login_autoLogin">Auto login</string>
+    <string name="login_remember">Remember login</string>
+
+    <string name="user_firstName">First name</string>
+    <string name="user_lastName">Last name</string>
+    <string name="user_photoUrl">Photo link(Optional)</string>
+    <string name="user_submit">Create user</string>
+
+    <string name="user_noURL">Photo link is not valid. Continue without image?</string>
+    <string name="user_checkInput">Some inputs are not valid</string>
+
+    <string name="user_title">User information</string>
 </resources>

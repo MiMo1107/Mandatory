@@ -63,6 +63,25 @@
 
             </android.support.design.widget.TextInputLayout>
 
+            <Switch
+                android:id="@+id/login_saveInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
+                android:layout_marginTop="20dp"
+                android:text="@string/login_remember" />
+
+            <Switch
+                android:id="@+id/login_autoLogin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
+                android:layout_marginTop="20dp"
+                android:text="@string/login_autoLogin"
+                android:clickable="false"/>
+
             <Button
                 android:id="@+id/email_sign_in_button"
                 style="?android:textAppearanceSmall"

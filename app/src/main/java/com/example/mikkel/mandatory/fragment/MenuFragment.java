@@ -1,6 +1,7 @@
 package com.example.mikkel.mandatory.fragment;
 
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -10,13 +11,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.example.mikkel.mandatory.R;
+import com.example.mikkel.mandatory.adapter.CustomerAdapter;
 import com.example.mikkel.mandatory.adapter.DishAdapter;
 import com.example.mikkel.mandatory.adapter.DishClickListener;
 import com.example.mikkel.mandatory.adapter.ItemTouchListener;
-import com.example.mikkel.mandatory.model.Customer;
 import com.example.mikkel.mandatory.model.Dish;
 import com.example.mikkel.mandatory.rest.ApiClient;
 import com.example.mikkel.mandatory.rest.ApiInterface;
@@ -35,15 +35,23 @@ public class MenuFragment extends Fragment {
 
     private List<Dish> dishes;
     private DishAdapter adapter;
+    private ProgressDialog progress;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         dishes = new ArrayList<>();
         adapter = new DishAdapter(dishes,R.layout.list_item_dish, getActivity().getApplicationContext());
 
+
+        progress = new ProgressDialog(getActivity());
+        progress.setTitle("Loading");
+        progress.setMessage("Wait while loading...");
+        progress.setCancelable(false); // disable dismiss by tapping outside of the dialog
+
         // Initialize dataset, this data would usually come from a local content provider or
         // remote server.
         initDataset();
+        progress.show();
     }
 
     public MenuFragment() {
@@ -88,6 +96,7 @@ public class MenuFragment extends Fragment {
                 dishes.clear();
                 dishes.addAll(response.body());
                 adapter.notifyDataSetChanged();
+                progress.dismiss();
             }
 
             @Override

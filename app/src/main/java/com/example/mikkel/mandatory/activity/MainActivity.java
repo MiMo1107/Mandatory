@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -20,18 +21,26 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.mikkel.mandatory.R;
 import com.example.mikkel.mandatory.fragment.ContactsFragment;
+import com.example.mikkel.mandatory.fragment.CustomerFragment;
 import com.example.mikkel.mandatory.fragment.MenuFragment;
 import com.example.mikkel.mandatory.fragment.RateFragment;
 import com.example.mikkel.mandatory.fragment.ReceiptFragment;
 import com.example.mikkel.mandatory.fragment.TakeawayFragment;
 import com.example.mikkel.mandatory.fragment.UserFragment;
+import com.example.mikkel.mandatory.model.Customer;
+import com.google.gson.Gson;
+import com.squareup.picasso.Picasso;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    private Customer loggedIn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,12 +57,45 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
+        Menu nav_Menu = navigationView.getMenu();
         if (savedInstanceState == null) {
             Fragment fragment = new MenuFragment();
             FragmentManager fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction().add(R.id.main_content, fragment).commit();
             setTitle("Menu");
+        }
+
+        if(getIntent().getBooleanExtra("admin", false)){
+            TextView name = (TextView)  navigationView.getHeaderView(0).findViewById(R.id.nav_header_name);
+            name.setText("Administrator");
+            TextView email = (TextView)  navigationView.getHeaderView(0).findViewById(R.id.nav_header_email);
+            email.setText("");
+            nav_Menu.findItem(R.id.nav_myProfile).setVisible(false);
+            return;
+        }
+        String json = getIntent().getStringExtra("Customer");
+        if(json != null){
+
+            Gson gson = new Gson();
+            loggedIn = gson.fromJson(json, Customer.class);
+
+            if(!loggedIn.getPictureUrl().isEmpty()){
+                ImageView image = (ImageView) navigationView.getHeaderView(0).findViewById(R.id.nav_header_image);
+                Picasso.with(this).load(loggedIn.getPictureUrl()).into(image);
+            }
+            TextView name = (TextView)  navigationView.getHeaderView(0).findViewById(R.id.nav_header_name);
+            name.setText(loggedIn.getFirstname() + " " + loggedIn.getLastname());
+            TextView email = (TextView)  navigationView.getHeaderView(0).findViewById(R.id.nav_header_email);
+            email.setText(loggedIn.getEmail());
+            Toast.makeText(this, "Welcome " + loggedIn.getFirstname() + " " + loggedIn.getLastname(),Toast.LENGTH_LONG).show();
+
+            nav_Menu.findItem(R.id.nav_customer).setVisible(false);
+            nav_Menu.findItem(R.id.nav_takeaway).setVisible(false);
+            return;
+        } else {
+            nav_Menu.findItem(R.id.nav_customer).setVisible(false);
+            nav_Menu.findItem(R.id.nav_takeaway).setVisible(false);
+            nav_Menu.findItem(R.id.nav_myProfile).setVisible(false);
         }
     }
 
@@ -109,6 +151,8 @@ public class MainActivity extends AppCompatActivity
             fragmentClass = TakeawayFragment.class;
         } else if (id == R.id.nav_receipt) {
             fragmentClass = ReceiptFragment.class;
+        }else if (id == R.id.nav_customer) {
+            fragmentClass = CustomerFragment.class;
         }
 
         try {
@@ -127,7 +171,6 @@ public class MainActivity extends AppCompatActivity
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
-        Log.e("OMG", "End of fragment");
         return true;
     }
 
@@ -173,5 +216,21 @@ public class MainActivity extends AppCompatActivity
 
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    public Customer getLoggedIn() {
+        return loggedIn;
+    }
+
+    public void clearSharedPreference(View view) {
+        SharedPreferences settings;
+        SharedPreferences.Editor editor;
+
+        settings = view.getContext().getSharedPreferences("login", view.getContext().MODE_PRIVATE);
+        editor = settings.edit();
+
+        editor.clear();
+        editor.commit();
+        Toast.makeText(this, "Preferences deleted",Toast.LENGTH_SHORT).show();
     }
 }

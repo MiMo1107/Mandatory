@@ -2,6 +2,8 @@ package com.example.mikkel.mandatory.model;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -18,11 +20,11 @@ public class TakeAway {
     @SerializedName("Howmany")
     private int howmany;
     @SerializedName("OrderDate")
-    private Date orderDate;
+    private String orderDate;
     @SerializedName("PickupDateTime")
-    private Date pickupDateTime;
+    private String pickupDateTime;
 
-    public TakeAway(int id, int customerId, int dishId, int howmany, Date orderDate, Date pickupDateTime) {
+    public TakeAway(int id, int customerId, int dishId, int howmany, String orderDate, String pickupDateTime) {
         this.id = id;
         this.customerId = customerId;
         this.dishId = dishId;
@@ -63,19 +65,25 @@ public class TakeAway {
         this.howmany = howmany;
     }
 
-    public Date getOrderDate() {
-        return orderDate;
+    public String getOrderDate() {
+        String[] splited = orderDate.split("\\(|\\+");
+        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm dd/MM/yyyy");
+        String dateString = formatter.format(new Date(Long.parseLong(splited[1])));
+        return dateString;
     }
 
-    public void setOrderDate(Date orderDate) {
+    public void setOrderDate(String orderDate) {
         this.orderDate = orderDate;
     }
 
-    public Date getPickupDateTime() {
-        return pickupDateTime;
+    public String getPickupDateTime() {
+        String[] splited = pickupDateTime.split("\\(|\\+");
+        SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy hh:mm");
+        String dateString = formatter.format(new Date(Long.parseLong(splited[1])));
+        return dateString;
     }
 
-    public void setPickupDateTime(Date pickupDateTime) {
+    public void setPickupDateTime(String pickupDateTime) {
         this.pickupDateTime = pickupDateTime;
     }
 }

@@ -3,7 +3,11 @@ package com.example.mikkel.mandatory.activity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -20,20 +24,43 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import com.example.mikkel.mandatory.R;
+import com.example.mikkel.mandatory.model.Admin;
+import com.example.mikkel.mandatory.model.Customer;
+import com.example.mikkel.mandatory.model.Dish;
+import com.example.mikkel.mandatory.rest.ApiClient;
+import com.example.mikkel.mandatory.rest.ApiInterface;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.gson.Gson;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -54,24 +81,37 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private static final String[] DUMMY_CREDENTIALS = new String[]{
             "foo@example.com:hello", "bar@example.com:world"
     };
-    /**
-     * Keep track of the login task to ensure we can cancel it if requested.
-     */
-    private UserLoginTask mAuthTask = null;
-
     // UI references.
     private AutoCompleteTextView mEmailView;
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
+    private ApiInterface apiService;
+    private List<Admin> admins;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        apiService = ApiClient.getClient().create(ApiInterface.class);
         setContentView(R.layout.activity_login);
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         populateAutoComplete();
+
+
+        admins = new ArrayList<Admin>();
+        loadFromFirebase();
+        Switch rememberSwitch = (Switch)findViewById(R.id.login_saveInfo);
+        rememberSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    findViewById(R.id.login_autoLogin).setClickable(true);
+                } else {
+                    ((Switch)findViewById(R.id.login_autoLogin)).setChecked(false);
+                    findViewById(R.id.login_autoLogin).setClickable(false);
+                }
+            }
+        });
 
         mPasswordView = (EditText) findViewById(R.id.password);
         mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -104,6 +144,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+        loadPreferences();
     }
 
     private void populateAutoComplete() {
@@ -156,9 +197,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * errors are presented and no actual login attempt is made.
      */
     private void attemptLogin() {
-        if (mAuthTask != null) {
-            return;
-        }
 
         // Reset errors.
         mEmailView.setError(null);
@@ -167,6 +205,16 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         // Store values at the time of the login attempt.
         String email = mEmailView.getText().toString();
         String password = mPasswordView.getText().toString();
+
+        for (Admin admin: admins){
+            if(admin.getPassword().equals(password) && admin.getUsername().equals(email)){
+                Intent intent = new Intent(LoginActivity.this,MainActivity.class);
+                intent.putExtra("admin", true);
+                startActivity(intent);
+                showProgress(false);
+                return;
+            }
+        }
 
         boolean cancel = false;
         View focusView = null;
@@ -197,18 +245,17 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-            mAuthTask = new UserLoginTask(email, password);
-            mAuthTask.execute((Void) null);
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(getWindow().getDecorView().getRootView().getWindowToken(), 0);
+            userLogin(email,password);
         }
     }
 
     private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
-        return email.contains("@");
+        return (email.contains("@") && email.contains("."));
     }
 
     private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
         return password.length() > 4;
     }
 
@@ -299,64 +346,180 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         };
 
         int ADDRESS = 0;
-        int IS_PRIMARY = 1;
     }
+    public void userLogin(final String email, final String password){
 
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
-     */
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
+        final Call<Customer> call_customer = apiService.getCustomer(email, password);
+        call_customer.enqueue(new Callback<Customer>() {
+            @Override
+            public void onResponse(Call<Customer>call_customer, Response<Customer> response) {
+                Customer customer = response.body();
+                Intent intent = new Intent(LoginActivity.this,MainActivity.class);
+                Gson gson = new Gson();
+                intent.putExtra("Customer", gson.toJson(customer));
+                startActivity(intent);
+                showProgress(false);
 
-        private final String mEmail;
-        private final String mPassword;
-
-        UserLoginTask(String email, String password) {
-            mEmail = email;
-            mPassword = password;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
-
-            try {
-                // Simulate network access.
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                return false;
-            }
-
-            for (String credential : DUMMY_CREDENTIALS) {
-                String[] pieces = credential.split(":");
-                if (pieces[0].equals(mEmail)) {
-                    // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
+                if(((Switch)findViewById(R.id.login_saveInfo)).isChecked()){
+                    savePreferences(email, password);
                 }
             }
 
-            // TODO: register the new account here.
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            mAuthTask = null;
-            showProgress(false);
-
-            if (success) {
-                finish();
-            } else {
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                mPasswordView.requestFocus();
+            @Override
+            public void onFailure(Call<Customer>call, Throwable t) {
+                Log.e("Fail", t.toString());
+                checkConnection(email, password);
             }
-        }
+        });
+    }
 
-        @Override
-        protected void onCancelled() {
-            mAuthTask = null;
-            showProgress(false);
+    public void checkConnection(final String email, final String password){
+        final Call<Void> call_connection = apiService.getConnection();
+        call_connection.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void>call_connection, Response<Void> response) {
+                if(response.isSuccessful()){
+                    checkEmail(email, password);
+                } else {
+                    endApp();
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<Void>call, Throwable t) {
+                Log.e("Fail", t.toString());
+                endApp();
+            }
+        });
+    }
+
+    public void endApp(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Closing the app");
+        builder.setMessage("No connection to the server");
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                finishAffinity();
+                System.exit(1);
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    public void checkEmail(final String email, final String password){
+        final Call<List<Customer>> call_customers = apiService.getAllCustomer();
+        call_customers.enqueue(new Callback<List<Customer>>() {
+            @Override
+            public void onResponse(Call<List<Customer>>call_customers, Response<List<Customer>> response) {
+                List<Customer> customers = response.body();
+                boolean found = false;
+                for(Customer c: customers){
+                    if(c.getEmail().equals(email)){
+                        found = true;
+                    }
+                }
+                if(found){
+                    wrongPassword();
+                } else {
+                    createNewCustomer(email, password);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Customer>>call, Throwable t) {
+                Log.e("Fail", t.toString());
+            }
+        });
+    }
+
+    public void wrongPassword(){
+        showProgress(false);
+        Toast.makeText(this, "Email and password does not match",Toast.LENGTH_LONG).show();
+    }
+
+    public void createNewCustomer(String email, String password){
+        Intent intent = new Intent(LoginActivity.this,CreateNewCustomerActivity.class);
+        intent.putExtra("email", email);
+        intent.putExtra("password", password);
+        startActivity(intent);
+        showProgress(false);
+        return;
+    }
+
+    public void savePreferences(String email, String password){
+        Log.e("SavePref", "starting");
+        SharedPreferences settings;
+        SharedPreferences.Editor editor;
+        settings = getApplicationContext().getSharedPreferences("login", Context.MODE_PRIVATE);
+        editor = settings.edit();
+
+        editor.putString("email", email);
+        editor.putString("password", password);
+        editor.putBoolean("auto", ((Switch)findViewById(R.id.login_autoLogin)).isChecked());
+        editor.commit();
+    }
+
+    public void loadPreferences(){
+        SharedPreferences settings;
+        settings = getApplicationContext().getSharedPreferences("login", Context.MODE_PRIVATE); //1
+        String email = settings.getString("email", null);
+        String password = settings.getString("password", null);
+        Boolean autoLogin = settings.getBoolean("auto", false);
+        if(autoLogin){
+            showProgress(true);
+            ((Switch)findViewById(R.id.login_saveInfo)).setChecked(true);
+            ((Switch)findViewById(R.id.login_autoLogin)).setChecked(true);
+            findViewById(R.id.login_autoLogin).setClickable(true);
+            ((AutoCompleteTextView)findViewById(R.id.email)).setText(email);
+            ((TextView)findViewById(R.id.password)).setText(password);
+            userLogin(email, password);
+        } else if(email != null && password != null){
+            ((Switch)findViewById(R.id.login_saveInfo)).setChecked(true);
+            findViewById(R.id.login_autoLogin).setClickable(true);
+            ((AutoCompleteTextView)findViewById(R.id.email)).setText(email);
+            ((TextView)findViewById(R.id.password)).setText(password);;
         }
+    }
+
+    public void loadFromFirebase(){
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("users");
+
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // This method is called once with the initial value and again
+                // whenever data at this location is updated.
+                HashMap<String, HashMap<String, String>> values = (HashMap)dataSnapshot.getValue();
+                Iterator myVeryOwnIterator = values.keySet().iterator();
+                while(myVeryOwnIterator.hasNext()) {
+                    String key=(String)myVeryOwnIterator.next();
+                    HashMap<String, String> value= values.get(key);
+                    Iterator myVeryOwnIterator2 = value.keySet().iterator();
+                    Admin admin = new Admin();
+                    while(myVeryOwnIterator2.hasNext()) {
+                        String key2=(String)myVeryOwnIterator2.next();
+                        String value2=(String) value.get(key2);
+                        if(key2.equals("username")){
+                            admin.setUsername(value2);
+                        } else if (key2.equals("password")){
+                            admin.setPassword(value2);
+                        }
+                        admins.add(admin);
+                    }
+
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w("Firebase", "Failed to read value.", error.toException());
+            }
+        });
+
     }
 }
 

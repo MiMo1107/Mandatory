@@ -29,6 +29,10 @@ public class Customer {
         this.pictureUrl = pictureUrl;
     }
 
+    public Customer(){
+
+    }
+
     public int getId() {
         return id;
     }

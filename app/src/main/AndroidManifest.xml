@@ -22,7 +22,8 @@
             android:label="EASJ Canteen"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.MAIN"
+                    />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
@@ -30,7 +31,10 @@
         <activity
             android:name=".activity.MainActivity"
             android:label="EASJ Canteen"
-            android:theme="@style/AppTheme.NoActionBar"/>
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="orientation|screenSize"/>
+        <activity android:name=".activity.CreateNewCustomerActivity"
+            android:label="Create new user"/>
     </application>
 
 </manifest>
